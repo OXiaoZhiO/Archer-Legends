@@ -10,7 +10,7 @@ class PowerBar:
 
         self.player_pos = player_pos  # 玩家位置坐标
         self.pos = player_pos  # 新增 pos 属性，与 player_pos 同步
-        self.max_power = 30  # 最大蓄力值
+        self.max_power = 50  # 最大蓄力值
         self.current_power = 0  # 当前蓄力值
         self.width = self.max_power * 0.6  # 根据最大蓄力值自动调整宽度
         self.height = 10  # 调整蓄力条高度 '''调小至合适大小'''
