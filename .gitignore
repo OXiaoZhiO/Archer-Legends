@@ -20,6 +20,5 @@ env/
 Thumbs.db
 
 # 忽略打包生成的文件
-dist/
 build/
 *.egg-info/
