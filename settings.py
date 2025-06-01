@@ -9,6 +9,9 @@ BACKGROUND_IMAGE_PATH = os.path.join(BASE_DIR, "pictures", "background.png") # �
 FONT_PATH = os.path.join( BASE_DIR, "fonts", "font.ttf")  # 字体文件路径
 ARROW_IMAGE_PATH = os.path.join(BASE_DIR, "pictures", "arrow.png") # 箭矢文件路径
 PLAYER_IMAGE_PATH = os.path.join(BASE_DIR, "pictures", "player.png")# 玩家文件路径
+if True:
+    BAT_MOVE_PATH = os.path.join(BASE_DIR, "pictures", "bat","move.png")  # 路径
+    BAT_ORIGIN_PATH = os.path.join(BASE_DIR, "pictures", "bat", "origin.png")  # 路径
 
 # 游戏窗口配置
 SCREEN_WIDTH= 1024  # 屏幕宽度

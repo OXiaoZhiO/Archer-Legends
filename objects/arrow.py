@@ -36,7 +36,7 @@ class Arrow:
         try:
             # 加载箭头图像并调整大小
             surf = pygame.image.load(ARROW_IMAGE_PATH).convert_alpha()
-            surf = pygame.transform.scale(surf, (80, 120))  # 调整箭头图像大小
+            surf = pygame.transform.scale(surf, (45, 10))  # 调整箭头图像大小
 
         except pygame.error as e:
             # 如果加载失败，使用默认的简单箭头图形

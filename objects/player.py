@@ -14,7 +14,8 @@ class Player:
         self.health: int = 100  # 玩家当前生命值
         self.max_health: int = 100  # 玩家最大生命值
         self.money: int = 0  # 玩家拥有的金币数量
-        self.experience_level: int = 1  # 玩家的经验等级
+        self.exp:int=0
+        self.level: int = 1  # 玩家的经验等级
         self.alive: bool = True  # 玩家是否存活
         self.move: bool = False
         self.direct:int=0

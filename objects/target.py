@@ -3,10 +3,8 @@ import random
 import pygame
 from pygame.math import Vector2
 from settings import COLORS, SCREEN_WIDTH,WORLD_OFFSET,HALF_SCREEN
+from utils.transform import sx_to_wx,w_to_s
 
-from utils.transform import sx_to_wx
-
-from utils.transform import w_to_s
 
 
 class Target:
@@ -28,7 +26,6 @@ class Target:
         self.radius = 20  # 靶子半径
         self.speed = random.uniform(1.0, 2.5)  # 随机速度
         self.score_value = 10  # 基础分值
-        self.creation_time = pygame.time.get_ticks()  # 记录创建时间，用于控制行为逻辑
         self.rect = pygame.Rect(self.world_pos.x - self.radius, self.world_pos.y - self.radius, self.radius * 2,
                                 self.radius * 2)
 

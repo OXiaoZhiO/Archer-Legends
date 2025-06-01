@@ -4,12 +4,15 @@ from typing import List
 from settings import *
 from objects.power_bar import PowerBar
 from objects.arrow import Arrow
+from objects.health_bar import Health_bar
 from objects.target import Target
 from objects.player import Player
+from enemy.bat import Bat
 from utils.start_menu import show_start_menu
 from utils.drawing import *
 from utils.debug import *
 from utils.transform import *
+
 
 # 初始化游戏
 pygame.init()
@@ -36,6 +39,7 @@ def main():
 
     arrows: List[Arrow] = []  # 箭矢列表
     targets: List[Target] = []
+    bats: List[Bat] = []
     font = pygame.font.Font(FONT_PATH, 28)  # 字体
     small_font = pygame.font.Font(FONT_PATH, 16)  # 小字体，用于显示坐标
 
@@ -48,6 +52,8 @@ def main():
     power_bar = PowerBar(w_to_s(player.world_pos,WORLD_OFFSET))  # 蓄力条位置
     if not show_start_menu(screen, background_image):
         return
+    # 初始化血量条
+    health_bar = Health_bar("player", player.max_health)
 
     running = True
     while running:
@@ -86,13 +92,18 @@ def main():
         elif not keys[pygame.K_d] and not keys[pygame.K_a]:
             player.move = False
 
-        # 更新游戏状态
+        """ 更新游戏状态 """
+
+        # 在主循环中更新血量条
+        health_bar.update(player.health)
 
         power_bar.update(Vector2(w_to_s(player.world_pos,WORLD_OFFSET)))  # 更新蓄力条
 
         for target in targets[:]:
             target.update()  # 更新靶子位置
 
+        for bat in bats[:]:
+            bat.update()  # 更新bat状态
 
         for arrow in arrows[:]:
             arrow.update()  # 更新箭矢位置
@@ -118,7 +129,10 @@ def main():
         spawn_timer += 1
         if spawn_timer >= 120 and len(targets) < 6:  # 每3秒且靶子少于5个时
             targets.append(Target())
+            bats.append(Bat())
             spawn_timer = 0
+
+        """ 渲染 """
 
         # 绘制背景，考虑偏移量
         screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH - SCREEN_WIDTH, 0))
@@ -127,9 +141,11 @@ def main():
         # 绘制玩家
         player.draw(screen, WORLD_OFFSET)
 
-        # 绘制靶子和箭矢，考虑偏移量
+        # 绘制，考虑偏移量
         for target in targets:
             target.draw(screen, WORLD_OFFSET)
+        for bat in bats:
+            bat.draw(screen, WORLD_OFFSET)
         for arrow in arrows:
             arrow.draw(screen, WORLD_OFFSET)
 
@@ -146,8 +162,12 @@ def main():
         # 绘制蓄力条
         power_bar.draw(screen)
 
+
+        # 绘制玩家血量条
+        health_bar.draw(screen,player.world_pos,WORLD_OFFSET)
+
         # 调用 display_coordinates() 时传递 WORLD_OFFSET 参数
-        display_coordinates(screen, small_font, keys, w_mouse_pos, tuple(player.world_pos), targets, arrows, WORLD_OFFSET)
+        display_coordinates(screen, small_font, keys, w_mouse_pos, tuple(player.world_pos), targets, arrows,bats, WORLD_OFFSET)
 
         pygame.display.flip()  # 更新显示
         clock.tick(FPS)  # 60FPS

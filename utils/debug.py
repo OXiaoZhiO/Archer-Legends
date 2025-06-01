@@ -9,7 +9,7 @@ from utils.transform import w_to_s
 # 按下CTRL显示所有控件坐标
 def display_coordinates(screen: pygame.Surface, small_font: pygame.font.Font,
                         keys: list, mouse_pos: tuple, player_pos: tuple,
-                        targets: list, arrows: list, world_offset: int):
+                        targets: list, arrows: list, bats: list, world_offset: int):
     """
     在按下 Ctrl 键时显示鼠标、玩家、靶子和箭矢的坐标。
     :param screen: Pygame 的 Surface 对象，用于绘制文本。
@@ -19,6 +19,7 @@ def display_coordinates(screen: pygame.Surface, small_font: pygame.font.Font,
     :param player_pos: 玩家的位置，通常是一个 (x, y) 元组。
     :param targets: 靶子对象列表。
     :param arrows: 箭矢对象列表。
+
     :param world_offset: 背景偏移量。
     """
     if keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL]:  # 检测 Ctrl 键是否被按下
@@ -54,6 +55,15 @@ def display_coordinates(screen: pygame.Surface, small_font: pygame.font.Font,
             screen.blit(arrow_coord_text, (w_to_s(arrow_pos,world_offset)))
             # 假设每个箭矢的碰撞体积为矩形，大小为 arrow.rect.size
             draw_collision_volume(screen, w_to_s(arrow_pos,world_offset), "circle",15)
+
+        # 显示所有蝙蝠的坐标及碰撞体积
+        for bat in bats:
+            bat_pos = bat.get_position()  # 假设 bat 类有一个 get_position 方法返回其位置
+            formatted_bat_pos = format_coordinate(bat_pos)
+            bat_coord_text = small_font.render(f"蝙蝠: {formatted_bat_pos}", True, COLORS['black'])
+            screen.blit(bat_coord_text, (w_to_s(bat_pos, world_offset)))
+            # 假设每个蝙蝠的碰撞体积为矩形，大小为 bat.rect.size
+            draw_collision_volume(screen, w_to_s(bat_pos, world_offset), "circle", 15)
 
         # 显示玩家坐标及碰撞体积
         formatted_player_pos = format_coordinate(player_pos)
