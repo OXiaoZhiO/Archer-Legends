@@ -45,7 +45,7 @@ class Target:
         # 更新碰撞矩形的位置
         self.rect.topleft = (self.world_pos.x - self.radius, self.world_pos.y - self.radius)
 
-    def draw(self, surface: pygame.Surface, world_offset: float):
+    def draw(self, surface: pygame.Surface, world_offset: int):
         """
         绘制靶子(同心圆)，并考虑背景偏移。
         :param surface: 绘制目标的Surface对象

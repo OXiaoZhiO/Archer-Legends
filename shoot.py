@@ -5,6 +5,7 @@ from settings import *
 from objects.power_bar import PowerBar
 from objects.arrow import Arrow
 from objects.target import Target
+from objects.player import Player
 from utils.start_menu import show_start_menu
 from utils.drawing import *
 from utils.debug import *
@@ -29,9 +30,10 @@ except pygame.error as e:
 
 def main():
     """游戏主函数"""
-    global WORLD_OFFSET  # 添加 WORLD_OFFSET 的全局声明
-    player_pos = Vector2(PLAYER_START_POS)  # 玩家初始位置
-    player_speed = PLAYER_SPEED  # 玩家移动速度
+    global WORLD_OFFSET,HARD  # 添加 WORLD_OFFSET 的全局声明
+    player=Player()
+
+
     arrows: List[Arrow] = []  # 箭矢列表
     targets: List[Target] = []
     font = pygame.font.Font(FONT_PATH, 28)  # 字体
@@ -40,9 +42,10 @@ def main():
     score = 0  # 得分
     spawn_timer = 0  # 靶子生成计时器
 
+
+
     # 蓄力系统
-    power_bar = PowerBar(player_pos)  # 蓄力条位置
-    charging = False  # 是否正在蓄力
+    power_bar = PowerBar(w_to_s(player.world_pos,WORLD_OFFSET))  # 蓄力条位置
     if not show_start_menu(screen, background_image):
         return
 
@@ -61,25 +64,31 @@ def main():
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # 左键按下开始蓄力
-                    charging = True
+                    player.charging = True
                     power_bar.start_charging()
             elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1 and charging:  # 左键释放发射箭
-                    charging = False
+                if event.button == 1 and player.charging:  # 左键释放发射箭
+                    player.charging = False
                     power = power_bar.stop_charging()
-                    arrows.append(Arrow((w_player_pos.x, w_player_pos.y), Vector2(w_mouse_pos), WORLD_OFFSET, power))
+                    arrows.append(Arrow((player.world_pos.x, player.world_pos.y-30), Vector2(w_mouse_pos), WORLD_OFFSET, power))
+
 
         # 键盘控制背景和其他对象移动
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_a]:  # 左移背景和其他对象
-            WORLD_OFFSET -= player_speed
-        if keys[pygame.K_d]:  # 右移背景和其他对象
-            WORLD_OFFSET += player_speed
+        if keys[pygame.K_a] and not keys[pygame.K_d]:  # 左移背景和其他对象
+            player.move = True
+            WORLD_OFFSET -= player.speed
+            player.update(-1)
+        elif keys[pygame.K_d] and not keys[pygame.K_a]:  # 右移背景和其他对象
+            player.move = True
+            WORLD_OFFSET += player.speed
+            player.update(1)
+        elif not keys[pygame.K_d] and not keys[pygame.K_a]:
+            player.move = False
 
         # 更新游戏状态
 
-
-        power_bar.update(player_pos)  # 更新蓄力条
+        power_bar.update(Vector2(w_to_s(player.world_pos,WORLD_OFFSET)))  # 更新蓄力条
 
         for target in targets[:]:
             target.update()  # 更新靶子位置
@@ -115,9 +124,8 @@ def main():
         screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH - SCREEN_WIDTH, 0))
         screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH, 0))
         screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH + SCREEN_WIDTH, 0))
-
         # 绘制玩家
-        pygame.draw.circle(screen, COLORS['blue'], (int(player_pos.x), int(player_pos.y)), 8)
+        player.draw(screen, WORLD_OFFSET)
 
         # 绘制靶子和箭矢，考虑偏移量
         for target in targets:
@@ -126,9 +134,10 @@ def main():
             arrow.draw(screen, WORLD_OFFSET)
 
         # 绘制方向指示器和轨迹预测
-        if charging:
-            draw_direction_indicator(screen, player_pos, mouse_pos)
-            draw_trajectory(screen, Vector2(player_pos), Vector2(mouse_pos), power_bar.current_power)
+        if player.charging:
+            player_spos=Vector2(w_to_s((player.world_pos.x,player.world_pos.y-25),WORLD_OFFSET))
+            draw_direction_indicator(screen,player_spos , mouse_pos)
+            draw_trajectory(screen,player_spos, Vector2(mouse_pos), power_bar.current_power)
 
         # 绘制UI
         score_text = font.render(f"分数: {score}", True, COLORS['white'])
@@ -138,7 +147,7 @@ def main():
         power_bar.draw(screen)
 
         # 调用 display_coordinates() 时传递 WORLD_OFFSET 参数
-        display_coordinates(screen, small_font, keys, w_mouse_pos, tuple(w_player_pos), targets, arrows, WORLD_OFFSET)
+        display_coordinates(screen, small_font, keys, w_mouse_pos, tuple(player.world_pos), targets, arrows, WORLD_OFFSET)
 
         pygame.display.flip()  # 更新显示
         clock.tick(FPS)  # 60FPS
