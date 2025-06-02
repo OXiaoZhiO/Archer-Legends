@@ -14,3 +14,11 @@ def wx_to_sx(wx,offset):
 
 def sx_to_wx(sx, offset):
     return + offset + sx-(SCREEN_WIDTH // 2)
+
+def check(w_pos,offset) ->bool:
+    check_x=wx_to_sx(w_pos.x,offset)
+    if check_x>SCREEN_WIDTH or  check_x<0:
+        return False
+    else:
+        return True
+

@@ -1,7 +1,7 @@
 # objects/health_bar.py
 import pygame
 from pygame.math import Vector2
-from settings import COLORS
+from settings import COLORS,SCREEN_WIDTH
 
 from utils.transform import wx_to_sx
 
@@ -20,11 +20,17 @@ class Health_bar:
     def update(self, current_health: int):
         self.current_health = current_health
 
-    def draw(self,surface: pygame.Surface, pos: Vector2,offset):
+    def draw(self,surface: pygame.Surface, pos: Vector2,offset,home:bool=False):
         """绘制血量条"""
         # 计算血量条位置（在下方）
-        bar_x = wx_to_sx((pos.x - self.width // 2),offset)
-        bar_y = pos.y + 50  # 假设下方偏移 50
+        if home:
+            bar_x = 355
+            bar_y = 20
+        else:
+            bar_x = wx_to_sx((pos.x - self.width // 2), offset)
+            bar_y = pos.y + 50  # 假设下方偏移 50
+
+
 
         # 背景框
         pygame.draw.rect(surface, COLORS['gray'],

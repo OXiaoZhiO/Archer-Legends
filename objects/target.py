@@ -17,10 +17,10 @@ class Target:
         """
         # 决定靶子从左侧还是右侧进入屏幕
         if random.choice([True, False]):  # 随机选择左侧或右侧
-            self.world_pos = Vector2(sx_to_wx(0,WORLD_OFFSET), random.randint(50, 300))  # 左侧屏幕外
+            self.world_pos = Vector2(random.randint(-2000, -1000), random.randint(50, 300))  # 左侧屏幕外
             self.direction = 1  # 向右移动
         else:
-            self.world_pos = Vector2(sx_to_wx(SCREEN_WIDTH,WORLD_OFFSET), random.randint(50, 300))  # 右侧屏幕外
+            self.world_pos = Vector2(random.randint(1000, 2000), random.randint(50, 300))  # 右侧屏幕外
             self.direction = -1  # 向左移动
 
         self.radius = 20  # 靶子半径
@@ -33,9 +33,9 @@ class Target:
 
         self.world_pos.x += self.speed * self.direction  # 根据方向更新世界坐标位置
 
-        if self.world_pos.x <=-600: # 检查是否超出边界
+        if self.world_pos.x <=-1000: # 检查是否超出边界
             self.direction = 1
-        elif self.world_pos.x >= 600:
+        elif self.world_pos.x >=1000:
             self.direction = -1
 
 

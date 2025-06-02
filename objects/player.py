@@ -1,3 +1,4 @@
+# objects/player.py
 import pygame
 from pygame import Vector2
 from settings import *

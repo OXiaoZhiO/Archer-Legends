@@ -1,5 +1,6 @@
 # utils/debug.py
 import pygame
+from pygame import Vector2
 from settings import COLORS, SCREEN_WIDTH, SCREEN_HEIGHT
 from utils.drawing import draw_collision_volume
 
@@ -59,11 +60,12 @@ def display_coordinates(screen: pygame.Surface, small_font: pygame.font.Font,
         # 显示所有蝙蝠的坐标及碰撞体积
         for bat in bats:
             bat_pos = bat.get_position()  # 假设 bat 类有一个 get_position 方法返回其位置
-            formatted_bat_pos = format_coordinate(bat_pos)
+            bat_pos_fix = Vector2(bat_pos.x+40,bat_pos.y)
+            formatted_bat_pos = format_coordinate(bat_pos_fix)
             bat_coord_text = small_font.render(f"蝙蝠: {formatted_bat_pos}", True, COLORS['black'])
             screen.blit(bat_coord_text, (w_to_s(bat_pos, world_offset)))
             # 假设每个蝙蝠的碰撞体积为矩形，大小为 bat.rect.size
-            draw_collision_volume(screen, w_to_s(bat_pos, world_offset), "circle", 15)
+            draw_collision_volume(screen, w_to_s((bat_pos.x+40,bat_pos.y+38), world_offset), "circle", 20)
 
         # 显示玩家坐标及碰撞体积
         formatted_player_pos = format_coordinate(player_pos)

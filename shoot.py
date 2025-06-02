@@ -4,7 +4,7 @@ from typing import List
 from settings import *
 from objects.power_bar import PowerBar
 from objects.arrow import Arrow
-from objects.health_bar import Health_bar
+from objects.home import Home
 from objects.target import Target
 from objects.player import Player
 from enemy.bat import Bat
@@ -12,7 +12,7 @@ from utils.start_menu import show_start_menu
 from utils.drawing import *
 from utils.debug import *
 from utils.transform import *
-
+from objects.health_bar import Health_bar
 
 # 初始化游戏
 pygame.init()
@@ -35,7 +35,9 @@ def main():
     """游戏主函数"""
     global WORLD_OFFSET,HARD  # 添加 WORLD_OFFSET 的全局声明
     player=Player()
-
+    home=Home()
+    to_home=0
+    to_home_max=180
 
     arrows: List[Arrow] = []  # 箭矢列表
     targets: List[Target] = []
@@ -81,6 +83,12 @@ def main():
 
         # 键盘控制背景和其他对象移动
         keys = pygame.key.get_pressed()
+        if keys[pygame.K_SPACE] :
+            to_home+=1
+            if to_home>=to_home_max:
+                to_home=0
+                player.world_pos=Vector2(PLAYER_START_POS)
+                WORLD_OFFSET=0
         if keys[pygame.K_a] and not keys[pygame.K_d]:  # 左移背景和其他对象
             player.move = True
             WORLD_OFFSET -= player.speed
@@ -96,6 +104,7 @@ def main():
 
         # 在主循环中更新血量条
         health_bar.update(player.health)
+        home.update()
 
         power_bar.update(Vector2(w_to_s(player.world_pos,WORLD_OFFSET)))  # 更新蓄力条
 
@@ -104,6 +113,12 @@ def main():
 
         for bat in bats[:]:
             bat.update()  # 更新bat状态
+            if bat.attack and not bat.attack_cooldown:
+                home.health-=bat.attack_power
+                bat.attack_cooldown=True
+
+            if not bat.alive:
+                bats.remove(bat)
 
         for arrow in arrows[:]:
             arrow.update()  # 更新箭矢位置
@@ -116,6 +131,21 @@ def main():
                     targets.remove(target)
                     remove_arrow = True
                     break
+
+            for bat in bats[:]:
+                if bat.check_hit(arrow.world_pos):  # 检测碰撞
+                    score += bat.score_value
+                    player.exp+=bat.exp_value
+                    bat.health-=player.attack_power
+                    if bat.health<=0:
+                        bat.death(screen, WORLD_OFFSET)
+                    remove_arrow = True
+                    break
+
+
+
+
+
 
             # 移除超出下表面的箭矢，考虑世界偏移
             if not ( arrow.world_pos.y <= SCREEN_HEIGHT):
@@ -138,21 +168,28 @@ def main():
         screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH - SCREEN_WIDTH, 0))
         screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH, 0))
         screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH + SCREEN_WIDTH, 0))
+
+        home.draw(screen, WORLD_OFFSET)
+        home.health_bar.draw(screen,Vector2(0,0),WORLD_OFFSET,True)
         # 绘制玩家
         player.draw(screen, WORLD_OFFSET)
 
         # 绘制，考虑偏移量
         for target in targets:
-            target.draw(screen, WORLD_OFFSET)
+            if check(target.world_pos,WORLD_OFFSET):
+                target.draw(screen, WORLD_OFFSET)
         for bat in bats:
-            bat.draw(screen, WORLD_OFFSET)
+            if check(bat.world_pos, WORLD_OFFSET):
+                bat.draw(screen, WORLD_OFFSET)
+                bat.health_bar.draw(screen,Vector2(bat.world_pos.x+15,bat.world_pos.y), WORLD_OFFSET)
         for arrow in arrows:
-            arrow.draw(screen, WORLD_OFFSET)
+            if check(arrow.world_pos, WORLD_OFFSET):
+                arrow.draw(screen, WORLD_OFFSET)
 
         # 绘制方向指示器和轨迹预测
         if player.charging:
             player_spos=Vector2(w_to_s((player.world_pos.x,player.world_pos.y-25),WORLD_OFFSET))
-            draw_direction_indicator(screen,player_spos , mouse_pos)
+            #draw_direction_indicator(screen,player_spos , mouse_pos)
             draw_trajectory(screen,player_spos, Vector2(mouse_pos), power_bar.current_power)
 
         # 绘制UI

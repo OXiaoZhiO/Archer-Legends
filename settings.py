@@ -9,8 +9,10 @@ BACKGROUND_IMAGE_PATH = os.path.join(BASE_DIR, "pictures", "background.png") # �
 FONT_PATH = os.path.join( BASE_DIR, "fonts", "font.ttf")  # 字体文件路径
 ARROW_IMAGE_PATH = os.path.join(BASE_DIR, "pictures", "arrow.png") # 箭矢文件路径
 PLAYER_IMAGE_PATH = os.path.join(BASE_DIR, "pictures", "player.png")# 玩家文件路径
+HOME_IMAGE_PATH=os.path.join(BASE_DIR, "pictures", "home.png")# 大本营文件路径
 if True:
     BAT_MOVE_PATH = os.path.join(BASE_DIR, "pictures", "bat","move.png")  # 路径
+    BAT_DEATH_PATH = os.path.join(BASE_DIR, "pictures", "bat", "death.png")  # 路径
     BAT_ORIGIN_PATH = os.path.join(BASE_DIR, "pictures", "bat", "origin.png")  # 路径
 
 # 游戏窗口配置
@@ -32,7 +34,7 @@ COLORS = {
     'blue': (0, 0, 255),
     'gold': (255, 215, 0),
     'yellow': (255, 255, 0),
-    'gray': (100, 100, 100)
+    'gray': (150,150,150)
 }
 
 # 玩家配置
