@@ -1,8 +1,16 @@
 # utils/start_menu.py
+from doctest import master
+
 from settings import COLORS, SCREEN_WIDTH, SCREEN_HEIGHT, FONT_PATH
 import pygame
 import math
 
+
+def draw_rounded_button(screen, rect, border_color, fill_color, border_radius, border_width=0):
+    """绘制带圆角边框的按钮"""
+    pygame.draw.rect(screen, fill_color, rect, border_radius=border_radius)  # 绘制填充颜色的矩形
+    if border_width > 0:
+        pygame.draw.rect(screen, border_color, rect, border_radius=border_radius, width=border_width)  # 绘制边框
 
 def show_start_menu(screen, background_image):
     """显示开始菜单，提供动态效果和用户交互"""
@@ -44,11 +52,7 @@ def show_start_menu(screen, background_image):
     quit_button_rect = pygame.Rect(QUIT_BUTTON_POSITION, QUIT_BUTTON_SIZE)  # 退出按钮区域
     back_button_rect = pygame.Rect(BACK_BUTTON_POSITION, BACK_BUTTON_SIZE)  # 返回按钮区域
 
-    def draw_rounded_button(screen, rect, border_color, fill_color, border_radius, border_width=0):
-        """绘制带圆角边框的按钮"""
-        pygame.draw.rect(screen, fill_color, rect, border_radius=border_radius)  # 绘制填充颜色的矩形
-        if border_width > 0:
-            pygame.draw.rect(screen, border_color, rect, border_radius=border_radius, width=border_width)  # 绘制边框
+
 
     def show_settings_menu():
         """显示设置界面"""
@@ -71,6 +75,10 @@ def show_start_menu(screen, background_image):
         """显示关于界面"""
         while True:  # 进入关于界面循环
             screen.blit(background_image, (0, 0))  # 绘制背景图像
+
+            # 使用新函数绘制关于信息
+            draw_about_screen(screen, menu_font,big_menu_font, COLORS)
+
             draw_rounded_button(screen, back_button_rect, COLORS['black'], COLORS['gold'], border_radius=15,
                                 border_width=3)  # 绘制返回按钮
             screen.blit(back_text, (back_button_rect.x + 10, back_button_rect.y + 5))  # 显示返回按钮文本
@@ -123,6 +131,7 @@ def show_start_menu(screen, background_image):
         hover_quit = quit_button_rect.collidepoint(mouse_pos)  # 检测是否悬停在退出按钮上
         hover_settings = settings_button_rect.collidepoint(mouse_pos)  # 检测是否悬停在设置按钮上
         hover_about = about_button_rect.collidepoint(mouse_pos)  # 检测是否悬停在关于按钮上
+        hover_back = back_button_rect.collidepoint(mouse_pos)  # 检测是否悬停在关于按钮上
 
         # 根据悬停状态调整按钮尺寸
         start_button_size = (
@@ -140,6 +149,10 @@ def show_start_menu(screen, background_image):
         quit_button_size = (
             int(QUIT_BUTTON_SIZE[0] * 1.05 if hover_quit else QUIT_BUTTON_SIZE[0]),
             int(QUIT_BUTTON_SIZE[1] * 1.05 if hover_quit else QUIT_BUTTON_SIZE[1])
+        )
+        back_button_size = (
+            int(QUIT_BUTTON_SIZE[0] * 1.05 if hover_back else QUIT_BUTTON_SIZE[0]),
+            int(QUIT_BUTTON_SIZE[1] * 1.05 if hover_back else QUIT_BUTTON_SIZE[1])
         )
 
         # 根据调整后的尺寸重新定义按钮区域
@@ -162,6 +175,11 @@ def show_start_menu(screen, background_image):
             (QUIT_BUTTON_POSITION[0] - (quit_button_size[0] - QUIT_BUTTON_SIZE[0]) // 2,
              QUIT_BUTTON_POSITION[1] - (quit_button_size[1] - QUIT_BUTTON_SIZE[1]) // 2),
             quit_button_size
+        )
+        back_button_rect = pygame.Rect(
+            (QUIT_BUTTON_POSITION[0] - (back_button_size[0] - QUIT_BUTTON_SIZE[0]) // 2,
+             QUIT_BUTTON_POSITION[1] - (back_button_size[1] - QUIT_BUTTON_SIZE[1]) // 2),
+            back_button_size
         )
 
         # 绘制按钮
@@ -197,3 +215,42 @@ def show_start_menu(screen, background_image):
                         return False  # 如果关于界面返回 False，则退出游戏
                 elif quit_button_rect.collidepoint(mouse_pos):  # 点击退出按钮
                     return False  # 返回 False 表示退出游戏
+
+# 新增的函数实现
+def draw_about_screen(screen, menu_font,big_menu_font, COLORS):
+
+    title_text = menu_font.render("弓箭手传奇", True, COLORS['gold'])  # 主标题
+    title_text_bk = big_menu_font.render("弓箭手传奇", True, COLORS['red'])  # 主标题背景
+
+
+    # 计算标题位置
+    title_x = SCREEN_WIDTH // 2 - title_text.get_width() // 2  # 计算标题水平居中位置
+    title_y = SCREEN_HEIGHT // 2 - 280  # 标题垂直位置
+
+    # 绘制主标题及其背景
+    screen.blit(title_text_bk, (title_x, title_y))  # 绘制标题背景
+    screen.blit(title_text, (title_x + 5, title_y))  # 绘制主标题（带轻微偏移）
+
+    # 开发人员信息
+    master_text = menu_font.render("开发人员", True, COLORS['black'])
+    A_text = menu_font.render("组长&程序：晓炙云溪", True, COLORS['black'])
+    B_text = menu_font.render("声乐&美术：雨林霖", True, COLORS['black'])
+    C_text = menu_font.render("策划&设计：可能是黑某人吧", True, COLORS['black'])
+    D_text = menu_font.render("设计&美术：cheems", True, COLORS['black'])
+
+    # 居中绘制逻辑
+    def blit_centered(text, y_offset):
+        x = (SCREEN_WIDTH - text.get_width()) // 2  # 水平居中
+        y = y_offset  # 垂直偏移
+        screen.blit(text, (x, y))
+    def blit_left(text, y_offset):
+        x = 250  # 水平居中
+        y = y_offset  # 垂直偏移
+        screen.blit(text, (x, y))
+
+    # 绘制标题和开发人员名单
+    blit_centered(master_text, 100)  # "开发人员" 标题
+    blit_left(A_text, 200)       # 第一条信息
+    blit_left(B_text, 250)       # 第二条信息
+    blit_left(C_text, 300)       # 第三条信息
+    blit_left(D_text, 350)       # 第四条信息

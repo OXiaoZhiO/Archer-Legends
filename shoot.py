@@ -8,18 +8,18 @@ from objects.home import Home
 from objects.target import Target
 from objects.player import Player
 from enemy.bat import Bat
-from utils.start_menu import show_start_menu
+from utils.start_menu import show_start_menu,draw_rounded_button
 from utils.drawing import *
 from utils.debug import *
 from utils.transform import *
 from objects.health_bar import Health_bar
+
 
 # 初始化游戏
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("弓箭手传奇")
 clock = pygame.time.Clock()
-
 
 # 加载背景图，添加错误处理逻辑
 try:
@@ -30,6 +30,41 @@ except pygame.error as e:
     background_image = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     background_image.fill(COLORS['black'])
 
+def pause_game():
+    """暂停游戏并显示暂停菜单"""
+    paused = True
+    font = pygame.font.Font(FONT_PATH, 36)
+    pause_text = font.render("游戏已暂停", True, COLORS['white'])
+    resume_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2, 100, 50)
+
+    while paused:
+        global WORLD_OFFSET, HARD
+        screen.fill(COLORS['black'])
+        # 绘制背景，考虑偏移量
+        screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH - SCREEN_WIDTH, 0))
+        screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH, 0))
+        screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH + SCREEN_WIDTH, 0))
+        screen.blit(pause_text, (SCREEN_WIDTH // 2 - pause_text.get_width() // 2, SCREEN_HEIGHT // 2 - 100))
+
+        # 绘制继续按钮
+        draw_rounded_button(screen, resume_button, COLORS['white'], COLORS['gold'], border_radius=15,
+                            border_width=3)
+        resume_text = font.render("继续", True, COLORS['black'])
+        screen.blit(resume_text, (resume_button.x + 13, resume_button.y + 5))
+
+
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if resume_button.collidepoint(event.pos):
+                    paused = False
+
+
+        pygame.display.flip()
+        clock.tick(FPS)
 
 def main():
     """游戏主函数"""
@@ -48,8 +83,6 @@ def main():
     score = 0  # 得分
     spawn_timer = 0  # 靶子生成计时器
 
-
-
     # 蓄力系统
     power_bar = PowerBar(w_to_s(player.world_pos,WORLD_OFFSET))  # 蓄力条位置
     if not show_start_menu(screen, background_image):
@@ -58,6 +91,9 @@ def main():
     health_bar = Health_bar("player", player.max_health)
 
     running = True
+    paused = False
+    pause_button = pygame.Rect(SCREEN_WIDTH-100, 10, 80, 50)  # 暂停按钮的位置和大小
+
     while running:
 
         # 更新坐标与世界坐标
@@ -71,15 +107,24 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:  # 左键按下开始蓄力
+                if pause_button.collidepoint(event.pos):  # 检测暂停按钮点击
+                    paused = not paused
+                    if paused:
+                        pause_game()
+                        paused=False
+                        break
+                if event.button == 1 and not paused:  # 左键按下开始蓄力
                     player.charging = True
                     power_bar.start_charging()
             elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1 and player.charging:  # 左键释放发射箭
+                if event.button == 1 and player.charging and not paused:  # 左键释放发射箭
                     player.charging = False
                     power = power_bar.stop_charging()
                     arrows.append(Arrow((player.world_pos.x, player.world_pos.y-30), Vector2(w_mouse_pos), WORLD_OFFSET, power))
 
+
+        if paused:
+            continue  # 如果游戏暂停，则跳过后续逻辑
 
         # 键盘控制背景和其他对象移动
         keys = pygame.key.get_pressed()
@@ -142,11 +187,6 @@ def main():
                     remove_arrow = True
                     break
 
-
-
-
-
-
             # 移除超出下表面的箭矢，考虑世界偏移
             if not ( arrow.world_pos.y <= SCREEN_HEIGHT):
                 remove_arrow = True
@@ -196,9 +236,15 @@ def main():
         score_text = font.render(f"分数: {score}", True, COLORS['white'])
         screen.blit(score_text, (10, 10))
 
+        # 绘制暂停按钮
+        draw_rounded_button(screen,pause_button,COLORS['black'], COLORS['gold'],border_radius=15,
+                                border_width=3)
+
+        pause_text = font.render("暂停", True, COLORS['white'])
+        screen.blit(pause_text, (pause_button.x + 10, pause_button.y + 10))
+
         # 绘制蓄力条
         power_bar.draw(screen)
-
 
         # 绘制玩家血量条
         health_bar.draw(screen,player.world_pos,WORLD_OFFSET)
@@ -207,7 +253,7 @@ def main():
         display_coordinates(screen, small_font, keys, w_mouse_pos, tuple(player.world_pos), targets, arrows,bats, WORLD_OFFSET)
 
         pygame.display.flip()  # 更新显示
-        clock.tick(FPS)  # 60FPS
+        clock.tick(FPS)
 
 
 if __name__ == "__main__":
