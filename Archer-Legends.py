@@ -1,5 +1,6 @@
 # Archer-Legends.py
 import pygame
+from sys import exit
 from typing import List
 from settings import *
 from objects.power_bar import PowerBar
@@ -11,6 +12,7 @@ from enemy.bat import Bat
 from utils.start_menu import show_start_menu,draw_rounded_button
 from utils.drawing import *
 from utils.debug import *
+from utils.pause_menu import *
 from utils.transform import *
 from objects.health_bar import Health_bar
 
@@ -30,41 +32,6 @@ except pygame.error as e:
     background_image = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     background_image.fill(COLORS['black'])
 
-def pause_game():
-    """暂停游戏并显示暂停菜单"""
-    paused = True
-    font = pygame.font.Font(FONT_PATH, 36)
-    pause_text = font.render("游戏已暂停", True, COLORS['white'])
-    resume_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2, 100, 50)
-
-    while paused:
-        global WORLD_OFFSET, HARD
-        screen.fill(COLORS['black'])
-        # 绘制背景，考虑偏移量
-        screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH - SCREEN_WIDTH, 0))
-        screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH, 0))
-        screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH + SCREEN_WIDTH, 0))
-        screen.blit(pause_text, (SCREEN_WIDTH // 2 - pause_text.get_width() // 2, SCREEN_HEIGHT // 2 - 100))
-
-        # 绘制继续按钮
-        draw_rounded_button(screen, resume_button, COLORS['white'], COLORS['gold'], border_radius=15,
-                            border_width=3)
-        resume_text = font.render("继续", True, COLORS['black'])
-        screen.blit(resume_text, (resume_button.x + 13, resume_button.y + 5))
-
-
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if resume_button.collidepoint(event.pos):
-                    paused = False
-
-
-        pygame.display.flip()
-        clock.tick(FPS)
 
 def main():
     """游戏主函数"""
@@ -110,7 +77,7 @@ def main():
                 if pause_button.collidepoint(event.pos):  # 检测暂停按钮点击
                     paused = not paused
                     if paused:
-                        pause_game()
+                        pause_game(screen)
                         paused=False
                         break
                 if event.button == 1 and not paused:  # 左键按下开始蓄力
@@ -199,7 +166,7 @@ def main():
         spawn_timer += 1
         if spawn_timer >= 120 and len(targets) < 6:  # 每3秒且靶子少于5个时
             targets.append(Target())
-            bats.append(Bat())
+            bats.append(Bat(HARD))
             spawn_timer = 0
 
         """ 渲染 """

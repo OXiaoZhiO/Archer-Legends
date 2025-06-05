@@ -9,7 +9,7 @@ from objects.health_bar import Health_bar
 
 class Bat:
 
-    def __init__(self):
+    def __init__(self,hard):
         # 决定蝙蝠从左侧还是右侧进入屏幕
         if random.choice([True, False]):  # 随机选择左侧或右侧
             self.world_pos = Vector2(-2000, random.randint(50, 250))  # 左侧屏幕外，随机高度
@@ -21,18 +21,18 @@ class Bat:
         # 基础属性
         self.attack=False
         self.speed = random.uniform(1.0, 2.0)  # 随机速度，控制蝙蝠的移动快慢
-        self.score_value = 10  # 基础分值，击杀蝙蝠后玩家获得的分数
-        self.exp_value = 10  # 经验值，击杀蝙蝠后玩家获得的经验
+        self.score_value = 5 * hard  # 基础分值，击杀蝙蝠后玩家获得的分数
+        self.exp_value = 5 * hard  # 经验值，击杀蝙蝠后玩家获得的经验
         self.radius = 20  # 假设蝙蝠的半径为20像素，用于碰撞检测
-        self.max_health = 30  # 最大生命值，用于限制生命恢复
+        self.max_health = 10 * hard  # 最大生命值，用于限制生命恢复
         self.health_bar= Health_bar("bat", self.max_health)
         self.health = self.max_health  # 当前生命值，初始为最大生命值
-        self.level = 1  # 等级，影响蝙蝠的基础属性和掉落奖励
+        self.level = hard  # 等级，影响蝙蝠的基础属性和掉落奖励
         self.money = self.level * 10  # 拥有的金币数量，击杀后掉落
         self.alive = True  # 是否存活，标记蝙蝠是否被击败
         self.move = False  # 移动状态，暂时未使用
         self.effects = []  # 当前效果列表，存储附加的状态效果（如减速、中毒等）
-        self.attack_power = 10  # 攻击力，蝙蝠对玩家造成的伤害
+        self.attack_power = 5 *hard  # 攻击力，蝙蝠对玩家造成的伤害
         self.hit_cooldown = False  # 是否处于受伤冷却状态，防止频繁受伤
         self.attack_cooldown = False  # 是否处于攻击冷却状态
         self.hit_cooldown_time = 60  # 受伤冷却剩余时间（帧数），每帧更新一次
@@ -88,10 +88,20 @@ class Bat:
             if self.time_temp <= 0:
                 self.attack_cooldown=False
                 self.time_temp=self.attack_cooldown_time
-    def draw(self,screen: pygame.Surface, world_offset: int):
+
+    def draw(self, screen: pygame.Surface, world_offset: int):
         """绘制蝙蝠的当前帧"""
-        screen_pos = Vector2(w_to_s(self.world_pos, world_offset))  # 计算屏幕相对位置
-        screen.blit(self.moves[self.current_frame],(screen_pos.x-25,screen_pos.y))
+        # 计算屏幕相对位置
+        screen_pos = Vector2(w_to_s(self.world_pos, world_offset))  # 转换为屏幕坐标
+
+        # 获取当前帧图片
+        current_image = self.moves[self.current_frame]
+
+        # 调整绘制位置，使图片中心对齐到 screen_pos
+        image_rect = current_image.get_rect(center=screen_pos)
+
+        # 绘制图片
+        screen.blit(current_image, image_rect.topleft)
 
     def get_position(self):
         """获取当前位置"""

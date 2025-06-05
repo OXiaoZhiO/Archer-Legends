@@ -65,7 +65,7 @@ def display_coordinates(screen: pygame.Surface, small_font: pygame.font.Font,
             bat_coord_text = small_font.render(f"蝙蝠: {formatted_bat_pos}", True, COLORS['black'])
             screen.blit(bat_coord_text, (w_to_s(bat_pos, world_offset)))
             # 假设每个蝙蝠的碰撞体积为矩形，大小为 bat.rect.size
-            draw_collision_volume(screen, w_to_s((bat_pos.x+40,bat_pos.y+38), world_offset), "circle", 20)
+            draw_collision_volume(screen, w_to_s((bat_pos.x,bat_pos.y), world_offset), "circle", 20)
 
         # 显示玩家坐标及碰撞体积
         formatted_player_pos = format_coordinate(player_pos)
