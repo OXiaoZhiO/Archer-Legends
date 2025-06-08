@@ -10,6 +10,7 @@ FONT_PATH = os.path.join( BASE_DIR, "fonts", "font.ttf")  # 字体文件路径
 ARROW_IMAGE_PATH = os.path.join(BASE_DIR, "pictures", "arrow.png") # 箭矢文件路径
 PLAYER_IMAGE_PATH = os.path.join(BASE_DIR, "pictures", "player.png")# 玩家文件路径
 HOME_IMAGE_PATH=os.path.join(BASE_DIR, "pictures", "home.png")# 大本营文件路径
+ZOMBIE_IMAGE_PATH=os.path.join(BASE_DIR, "pictures", "zombie.png")# 大本营文件路径
 if True:
     BAT_MOVE_PATH = os.path.join(BASE_DIR, "pictures", "bat","move.png")  # 路径
     BAT_DEATH_PATH = os.path.join(BASE_DIR, "pictures", "bat", "death.png")  # 路径
@@ -22,8 +23,8 @@ FPS= 60  # 帧率
 
 
 #世界难度
-HARD=1
-
+HARD=0
+TIME=0
 
 # 颜色定义
 COLORS = {

@@ -1,5 +1,6 @@
 # Archer-Legends.py
 import pygame
+import random
 from sys import exit
 from typing import List
 from settings import *
@@ -9,7 +10,9 @@ from objects.home import Home
 from objects.target import Target
 from objects.player import Player
 from enemy.bat import Bat
+from enemy.zombie import Zombie
 from utils.start_menu import show_start_menu,draw_rounded_button
+from utils.game_over_menu import *
 from utils.drawing import *
 from utils.debug import *
 from utils.pause_menu import *
@@ -35,15 +38,16 @@ except pygame.error as e:
 
 def main():
     """游戏主函数"""
-    global WORLD_OFFSET,HARD  # 添加 WORLD_OFFSET 的全局声明
+    global WORLD_OFFSET,HARD,TIME # 添加 WORLD_OFFSET 的全局声明
     player=Player()
     home=Home()
-    to_home=0
-    to_home_max=180
+     
+    second=0
 
     arrows: List[Arrow] = []  # 箭矢列表
     targets: List[Target] = []
     bats: List[Bat] = []
+    zombies: List[Zombie] = []
     font = pygame.font.Font(FONT_PATH, 28)  # 字体
     small_font = pygame.font.Font(FONT_PATH, 16)  # 小字体，用于显示坐标
 
@@ -52,6 +56,7 @@ def main():
 
     # 蓄力系统
     power_bar = PowerBar(w_to_s(player.world_pos,WORLD_OFFSET))  # 蓄力条位置
+    
     if not show_start_menu(screen, background_image):
         return
     # 初始化血量条
@@ -63,6 +68,15 @@ def main():
 
     while running:
 
+        if TIME % 60 == 0 and second==0:
+            HARD += 1
+
+        second += 1
+        if second == FPS:
+            second = 0
+            TIME += 1
+            print(player.level,player.exp)
+
         # 更新坐标与世界坐标
         mouse_pos = pygame.mouse.get_pos()
         w_player_pos = Vector2(WORLD_OFFSET,PLAYER_START_POS[1])
@@ -72,7 +86,7 @@ def main():
         # 事件处理
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if pause_button.collidepoint(event.pos):  # 检测暂停按钮点击
                     paused = not paused
@@ -96,25 +110,31 @@ def main():
         # 键盘控制背景和其他对象移动
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE] :
-            to_home+=1
-            if to_home>=to_home_max:
-                to_home=0
-                player.world_pos=Vector2(PLAYER_START_POS)
-                WORLD_OFFSET=0
+            player.to_home+=1
+
         if keys[pygame.K_a] and not keys[pygame.K_d]:  # 左移背景和其他对象
-            player.move = True
-            WORLD_OFFSET -= player.speed
-            player.update(-1)
+            if player.alive:
+                player.move = True
+                WORLD_OFFSET -= player.speed
+                player.go(-1)
+
         elif keys[pygame.K_d] and not keys[pygame.K_a]:  # 右移背景和其他对象
-            player.move = True
-            WORLD_OFFSET += player.speed
-            player.update(1)
+            if player.alive:
+                player.move = True
+                WORLD_OFFSET += player.speed
+                player.go(1)
+
         elif not keys[pygame.K_d] and not keys[pygame.K_a]:
             player.move = False
 
+        if player.to_home>=player.to_home_max:
+            player.to_home=0
+            player.world_pos=Vector2(PLAYER_START_POS)
+            WORLD_OFFSET=0
         """ 更新游戏状态 """
 
         # 在主循环中更新血量条
+        player.update()
         health_bar.update(player.health)
         home.update()
 
@@ -132,6 +152,18 @@ def main():
             if not bat.alive:
                 bats.remove(bat)
 
+        for zombie in zombies[:]:
+            zombie.update(player.world_pos)  # 更新bat状态
+            if zombie.attack and not zombie.attack_cooldown and zombie.atk=="home":
+                home.health-=zombie.attack_power
+                zombie.attack_cooldown=True
+            elif zombie.attack and not zombie.attack_cooldown and zombie.atk=="player":
+                player.health-=zombie.attack_power
+                zombie.attack_cooldown=True
+
+            if not zombie.alive:
+                zombies.remove(zombie)
+
         for arrow in arrows[:]:
             arrow.update()  # 更新箭矢位置
             remove_arrow = False  # 标记是否需要移除箭矢
@@ -141,18 +173,35 @@ def main():
                 if target.check_hit(arrow.world_pos):  # 检测碰撞
                     score += target.score_value
                     targets.remove(target)
+                    player.exp+=HARD
                     remove_arrow = True
                     break
 
             for bat in bats[:]:
-                if bat.check_hit(arrow.world_pos):  # 检测碰撞
-                    score += bat.score_value
-                    player.exp+=bat.exp_value
-                    bat.health-=player.attack_power
-                    if bat.health<=0:
-                        bat.death(screen, WORLD_OFFSET)
-                    remove_arrow = True
-                    break
+                if bat.death_lock:
+
+                    if bat.check_hit(arrow.world_pos):  # 检测碰撞
+                        score += bat.score_value
+
+                        bat.health-=player.attack_power
+                        if bat.health<=0:
+                            bat.death(screen, WORLD_OFFSET)
+                            player.exp += bat.exp_value
+                            player.money += bat.money
+                        remove_arrow = True
+                        break
+
+            for zombie in zombies[:]:
+                if zombie.death_lock:
+                    if zombie.check_hit(arrow.world_pos):  # 检测碰撞
+                        score += zombie.score_value
+                        zombie.health -= player.attack_power
+                        if zombie.health <= 0:
+                            zombie.death(screen, WORLD_OFFSET)
+                            player.exp += zombie.exp_value
+                            player.money += zombie.money
+                        remove_arrow = True
+                        break
 
             # 移除超出下表面的箭矢，考虑世界偏移
             if not ( arrow.world_pos.y <= SCREEN_HEIGHT):
@@ -164,10 +213,32 @@ def main():
 
         # 随机生成新靶子
         spawn_timer += 1
-        if spawn_timer >= 120 and len(targets) < 6:  # 每3秒且靶子少于5个时
-            targets.append(Target())
-            bats.append(Bat(HARD))
+        len_all=len(targets)+len(zombies)+len(bats)
+        if spawn_timer >= 120 and len_all < 40:  # 每3秒且
+            random_opponent=random.choice(["target","zombie","zombie","bat","bat","bat"])
+            if random_opponent=="target":
+                targets.append(Target())
+            elif random_opponent=="zombie":
+                bats.append(Bat(HARD))
+            elif random_opponent == "bat":
+                zombies.append(Zombie(HARD))
+
+
             spawn_timer = 0
+
+
+
+        if home.health<=0:
+            if not show_game_over_menu(screen,background_image):
+                break
+            else:
+                main()
+
+
+
+
+
+
 
         """ 渲染 """
 
@@ -188,7 +259,11 @@ def main():
         for bat in bats:
             if check(bat.world_pos, WORLD_OFFSET):
                 bat.draw(screen, WORLD_OFFSET)
-                bat.health_bar.draw(screen,Vector2(bat.world_pos.x+15,bat.world_pos.y), WORLD_OFFSET)
+                bat.health_bar.draw(screen,Vector2(bat.world_pos.x,bat.world_pos.y-30), WORLD_OFFSET)
+        for zombie in zombies:
+            if check(zombie.world_pos, WORLD_OFFSET):
+                zombie.draw(screen, WORLD_OFFSET)
+                zombie.health_bar.draw(screen,Vector2(zombie.world_pos.x,zombie.world_pos.y-30), WORLD_OFFSET)
         for arrow in arrows:
             if check(arrow.world_pos, WORLD_OFFSET):
                 arrow.draw(screen, WORLD_OFFSET)
@@ -202,6 +277,10 @@ def main():
         # 绘制UI
         score_text = font.render(f"分数: {score}", True, COLORS['white'])
         screen.blit(score_text, (10, 10))
+        score_text = font.render(f"金钱: {player.money}", True, COLORS['white'])
+        screen.blit(score_text, (10, 40))
+        score_text = font.render(f"时间: {TIME}", True, COLORS['white'])
+        screen.blit(score_text, (10, 70))
 
         # 绘制暂停按钮
         draw_rounded_button(screen,pause_button,COLORS['black'], COLORS['gold'],border_radius=15,
@@ -216,7 +295,7 @@ def main():
         # 绘制玩家血量条
         health_bar.draw(screen,player.world_pos,WORLD_OFFSET)
 
-        # 调用 display_coordinates() 时传递 WORLD_OFFSET 参数
+        # 调用 display_coordinates() 时递 WORLD_OFFSET 参数
         display_coordinates(screen, small_font, keys, w_mouse_pos, tuple(player.world_pos), targets, arrows,bats, WORLD_OFFSET)
 
         pygame.display.flip()  # 更新显示

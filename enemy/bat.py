@@ -4,7 +4,6 @@ import pygame
 from pygame.math import Vector2
 from settings import *
 from utils.transform import sx_to_wx, w_to_s
-
 from objects.health_bar import Health_bar
 
 class Bat:
@@ -22,13 +21,13 @@ class Bat:
         self.attack=False
         self.speed = random.uniform(1.0, 2.0)  # 随机速度，控制蝙蝠的移动快慢
         self.score_value = 5 * hard  # 基础分值，击杀蝙蝠后玩家获得的分数
-        self.exp_value = 5 * hard  # 经验值，击杀蝙蝠后玩家获得的经验
+        self.exp_value = 2 * hard  # 经验值，击杀蝙蝠后玩家获得的经验
         self.radius = 20  # 假设蝙蝠的半径为20像素，用于碰撞检测
         self.max_health = 10 * hard  # 最大生命值，用于限制生命恢复
         self.health_bar= Health_bar("bat", self.max_health)
         self.health = self.max_health  # 当前生命值，初始为最大生命值
         self.level = hard  # 等级，影响蝙蝠的基础属性和掉落奖励
-        self.money = self.level * 10  # 拥有的金币数量，击杀后掉落
+        self.money = self.level * 5  # 拥有的金币数量，击杀后掉落
         self.alive = True  # 是否存活，标记蝙蝠是否被击败
         self.move = False  # 移动状态，暂时未使用
         self.effects = []  # 当前效果列表，存储附加的状态效果（如减速、中毒等）
@@ -39,6 +38,7 @@ class Bat:
         self.attack_cooldown_time = 60  # 攻击冷却剩余时间（帧数），控制攻击频率
         self.tenacity = 5  # 减少受到的伤害，提升生存能力
         self.time_temp=self.attack_cooldown_time
+        self.death_lock = True
 
         # 碰撞矩形
         self.rect = pygame.image.load(BAT_ORIGIN_PATH).convert_alpha().get_rect(
@@ -81,7 +81,6 @@ class Bat:
             self.frame_timer = 0
             self.current_frame = (self.current_frame + 1) % len(self.moves)
         if self.current_frame==7 and len(self.moves)==8:
-            
             self.alive = False
         if self.attack_cooldown:
             self.time_temp-=1
@@ -105,7 +104,7 @@ class Bat:
 
     def get_position(self):
         """获取当前位置"""
-        return Vector2(self.world_pos.x-25,self.world_pos.y)  # 返回世界坐标位置
+        return Vector2(self.world_pos.x,self.world_pos.y)  # 返回世界坐标位置
 
     def check_hit(self, arrow_pos: Vector2) -> bool:
         """
@@ -116,6 +115,7 @@ class Bat:
         return self.world_pos.distance_to(arrow_pos) <= (self.radius + 15)  # 判断箭与靶子中心的距离是否小于命中范围
 
     def death(self,screen: pygame.Surface,offset):
+        self.death_lock = False
         self.current_frame = 0  # 重置当前帧为死亡动画的第一帧
         self.frame_timer = 0  # 重置帧计时器
         self.moves = self.deaths  # 切换到死亡动画帧

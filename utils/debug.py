@@ -60,7 +60,7 @@ def display_coordinates(screen: pygame.Surface, small_font: pygame.font.Font,
         # 显示所有蝙蝠的坐标及碰撞体积
         for bat in bats:
             bat_pos = bat.get_position()  # 假设 bat 类有一个 get_position 方法返回其位置
-            bat_pos_fix = Vector2(bat_pos.x+40,bat_pos.y)
+            bat_pos_fix = Vector2(bat_pos.x,bat_pos.y)
             formatted_bat_pos = format_coordinate(bat_pos_fix)
             bat_coord_text = small_font.render(f"蝙蝠: {formatted_bat_pos}", True, COLORS['black'])
             screen.blit(bat_coord_text, (w_to_s(bat_pos, world_offset)))
@@ -82,4 +82,4 @@ def display_coordinates(screen: pygame.Surface, small_font: pygame.font.Font,
 
         #显示偏移量
         offset_text = small_font.render(f"偏移量: {world_offset}", True, COLORS['black'])
-        screen.blit(offset_text, (10, 40))
+        screen.blit(offset_text, (10, 560))

@@ -10,13 +10,13 @@ class Home:
     def __init__(self):
         self.world_pos=Vector2(0, 530)
         self.image = pygame.transform.scale(pygame.image.load(HOME_IMAGE_PATH).convert_alpha(), (350, 350))
-        self.max_health = 500  # 最大生命值，用于限制生命恢复
-        self.health_bar = Health_bar("home", self.max_health)
+        self.max_health = 1000  # 最大生命值，用于限制生命恢复
+        self.health_bar = Health_bar("home", self.max_health//2)
         self.health = self.max_health  # 当前生命值，初始为最大生命值
         self.rect = self.image.get_rect(center=self.world_pos)  # 加载原始图片并获取其矩形区域
 
     def update(self):
-        self.health_bar.update(self.health)
+        self.health_bar.update(self.health//2)
 
     def draw(self,screen: pygame.Surface, world_offset: int):
 
