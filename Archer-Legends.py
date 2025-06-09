@@ -9,10 +9,11 @@ from objects.arrow import Arrow
 from objects.home import Home
 from objects.target import Target
 from objects.player import Player
-from enemy.bat import Bat
-from enemy.zombie import Zombie
+from enemys.bat import Bat
+from enemys.zombie import Zombie
 from utils.start_menu import show_start_menu,draw_rounded_button
 from utils.game_over_menu import *
+from utils.shop_menu import *
 from utils.drawing import *
 from utils.debug import *
 from utils.pause_menu import *
@@ -22,23 +23,44 @@ from objects.health_bar import Health_bar
 
 # 初始化游戏
 pygame.init()
+pygame.mixer.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("弓箭手传奇")
 clock = pygame.time.Clock()
+
+
+
+
+
+
 
 # 加载背景图，添加错误处理逻辑
 try:
     background_image = pygame.image.load(BACKGROUND_IMAGE_PATH).convert()  # 加载背景图
     background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))  # 调整背景图大小
+
+
 except pygame.error as e:
     print(f"无法加载背景图像: {e}")
     background_image = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     background_image.fill(COLORS['black'])
 
 
+
+
 def main():
+    global WORLD_OFFSET, HARD, TIME, SPAWN_TIME  # 添加 WORLD_OFFSET 的全局声明
+    HARD=0
+    TIME=0
+    hit_sound = pygame.mixer.Sound(HIT_PATH)  # 命中靶子音效
+    hit_sound.set_volume(10 * VOLUME)
+    select_sound=pygame.mixer.Sound(SELECT_PATH)
+    select_sound.set_volume(10 * VOLUME)
+
     """游戏主函数"""
-    global WORLD_OFFSET,HARD,TIME # 添加 WORLD_OFFSET 的全局声明
+    # 加载并播放背景音乐
+
+
     player=Player()
     home=Home()
      
@@ -64,22 +86,29 @@ def main():
 
     running = True
     paused = False
+    shop= False
     pause_button = pygame.Rect(SCREEN_WIDTH-100, 10, 80, 50)  # 暂停按钮的位置和大小
+    shop_button = pygame.Rect(SCREEN_WIDTH - 200, 10, 80, 50)  # 暂停按钮的位置和大小
+
+    pygame.mixer.music.load(BGM_PATH)  # 替换为你的 BGM 文件路径
+    pygame.mixer.music.set_volume(VOLUME / 3)  # 设置音量（0.0 到 1.0）
+    pygame.mixer.music.play(-1)  # -1 表示循环播放
 
     while running:
 
-        if TIME % 60 == 0 and second==0:
+        if TIME % 30 == 0 and second == 0:
             HARD += 1
+            if SPAWN_TIME > 60:
+                SPAWN_TIME -= 13
 
         second += 1
         if second == FPS:
             second = 0
             TIME += 1
-            print(player.level,player.exp)
 
         # 更新坐标与世界坐标
         mouse_pos = pygame.mouse.get_pos()
-        w_player_pos = Vector2(WORLD_OFFSET,PLAYER_START_POS[1])
+        #w_player_pos = Vector2(WORLD_OFFSET,PLAYER_START_POS[1])
         w_mouse_pos = s_to_w(pygame.mouse.get_pos(), WORLD_OFFSET)
 
 
@@ -89,19 +118,30 @@ def main():
                 exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if pause_button.collidepoint(event.pos):  # 检测暂停按钮点击
+                    select_sound.play()
                     paused = not paused
                     if paused:
                         pause_game(screen)
                         paused=False
                         break
+                if shop_button.collidepoint(event.pos):  # 检测暂停按钮点击
+                    select_sound.play()
+                    shop = not shop
+                    if shop:
+                        shop_menu(screen,HARD,player,home,power_bar,zombies,bats,targets)
+                        shop=False
+                        break
                 if event.button == 1 and not paused:  # 左键按下开始蓄力
                     player.charging = True
                     power_bar.start_charging()
             elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1 and player.charging and not paused:  # 左键释放发射箭
+                if event.button == 1 and player.charging and not paused :  # 左键释放发射箭
                     player.charging = False
                     power = power_bar.stop_charging()
-                    arrows.append(Arrow((player.world_pos.x, player.world_pos.y-30), Vector2(w_mouse_pos), WORLD_OFFSET, power))
+
+                    if player.arrow_count>0 and player.alive:
+                        player.arrow_count -= 1
+                        arrows.append(Arrow((player.world_pos.x, player.world_pos.y-30), Vector2(w_mouse_pos), WORLD_OFFSET, power))
 
 
         if paused:
@@ -135,7 +175,7 @@ def main():
 
         # 在主循环中更新血量条
         player.update()
-        health_bar.update(player.health)
+        health_bar.update(player.health,player.max_health)
         home.update()
 
         power_bar.update(Vector2(w_to_s(player.world_pos,WORLD_OFFSET)))  # 更新蓄力条
@@ -146,7 +186,14 @@ def main():
         for bat in bats[:]:
             bat.update()  # 更新bat状态
             if bat.attack and not bat.attack_cooldown:
-                home.health-=bat.attack_power
+                if home.tenacity<bat.attack_power:
+                    hit_sound.play()
+                    home.health -= (bat.attack_power-home.tenacity)
+                bat.health -= home.return_power
+                if bat.health <= 0:
+                    bat.death(screen, WORLD_OFFSET)
+                    player.exp += bat.exp_value
+                    player.money += bat.money
                 bat.attack_cooldown=True
 
             if not bat.alive:
@@ -155,10 +202,24 @@ def main():
         for zombie in zombies[:]:
             zombie.update(player.world_pos)  # 更新bat状态
             if zombie.attack and not zombie.attack_cooldown and zombie.atk=="home":
-                home.health-=zombie.attack_power
+                if home.tenacity<zombie.attack_power:
+                    home.health -= (zombie.attack_power-home.tenacity)
+                zombie.health-=home.return_power
+                if zombie.health <= 0:
+                    zombie.death(screen, WORLD_OFFSET)
+                    player.exp += zombie.exp_value
+                    player.money += zombie.money
+                hit_sound.play()
                 zombie.attack_cooldown=True
             elif zombie.attack and not zombie.attack_cooldown and zombie.atk=="player":
-                player.health-=zombie.attack_power
+                if player.tenacity < zombie.attack_power:
+                    player.health -= (zombie.attack_power - player.tenacity)
+                zombie.health -= home.return_power
+                if zombie.health <= 0:
+                    zombie.death(screen, WORLD_OFFSET)
+                    player.exp += zombie.exp_value
+                    player.money += zombie.money
+                hit_sound.play()
                 zombie.attack_cooldown=True
 
             if not zombie.alive:
@@ -171,9 +232,10 @@ def main():
             # 检测箭矢与所有靶子的碰撞
             for target in targets[:]:
                 if target.check_hit(arrow.world_pos):  # 检测碰撞
-                    score += target.score_value
+                    score += target.score_value * HARD
                     targets.remove(target)
                     player.exp+=HARD
+                    hit_sound.play()
                     remove_arrow = True
                     break
 
@@ -182,7 +244,7 @@ def main():
 
                     if bat.check_hit(arrow.world_pos):  # 检测碰撞
                         score += bat.score_value
-
+                        hit_sound.play()
                         bat.health-=player.attack_power
                         if bat.health<=0:
                             bat.death(screen, WORLD_OFFSET)
@@ -195,6 +257,7 @@ def main():
                 if zombie.death_lock:
                     if zombie.check_hit(arrow.world_pos):  # 检测碰撞
                         score += zombie.score_value
+                        hit_sound.play()
                         zombie.health -= player.attack_power
                         if zombie.health <= 0:
                             zombie.death(screen, WORLD_OFFSET)
@@ -214,7 +277,7 @@ def main():
         # 随机生成新靶子
         spawn_timer += 1
         len_all=len(targets)+len(zombies)+len(bats)
-        if spawn_timer >= 120 and len_all < 40:  # 每3秒且
+        if spawn_timer >= SPAWN_TIME and len_all < (40+HARD*3):  # 每3秒且
             random_opponent=random.choice(["target","zombie","zombie","bat","bat","bat"])
             if random_opponent=="target":
                 targets.append(Target())
@@ -229,7 +292,7 @@ def main():
 
 
         if home.health<=0:
-            if not show_game_over_menu(screen,background_image):
+            if not show_game_over_menu(screen,background_image,score,TIME):
                 break
             else:
                 main()
@@ -246,6 +309,12 @@ def main():
         screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH - SCREEN_WIDTH, 0))
         screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH, 0))
         screen.blit(background_image, (-WORLD_OFFSET % SCREEN_WIDTH + SCREEN_WIDTH, 0))
+
+        #screen.blit(grass_image, (-WORLD_OFFSET % SCREEN_WIDTH - SCREEN_WIDTH, 0))
+        #screen.blit(grass_image, (-WORLD_OFFSET % SCREEN_WIDTH, 0))
+        #screen.blit(grass_image, (-WORLD_OFFSET % SCREEN_WIDTH + SCREEN_WIDTH, 0))
+
+
 
         home.draw(screen, WORLD_OFFSET)
         home.health_bar.draw(screen,Vector2(0,0),WORLD_OFFSET,True)
@@ -281,13 +350,37 @@ def main():
         screen.blit(score_text, (10, 40))
         score_text = font.render(f"时间: {TIME}", True, COLORS['white'])
         screen.blit(score_text, (10, 70))
+        score_text = font.render(f"箭矢: {player.arrow_count}", True, COLORS['white'])
+        screen.blit(score_text, (10,100))
+
+
+        if TIME<20:
+            score_text = font.render(f"AD键移动", True, COLORS['white'])
+            screen.blit(score_text, (10, 150))
+            score_text = font.render(f"鼠标左键蓄力射箭", True, COLORS['white'])
+            screen.blit(score_text, (10, 180))
+            score_text = font.render(f"长按空格回城", True, COLORS['white'])
+            screen.blit(score_text, (10, 210))
+            score_text = font.render(f"保护好主城免受敌人入侵！", True, COLORS['white'])
+            screen.blit(score_text, (10, 240))
+
+
+
 
         # 绘制暂停按钮
         draw_rounded_button(screen,pause_button,COLORS['black'], COLORS['gold'],border_radius=15,
                                 border_width=3)
+        # 绘制商店按钮
+        draw_rounded_button(screen, shop_button, COLORS['black'], COLORS['gold'], border_radius=15,
+                            border_width=3)
+
 
         pause_text = font.render("暂停", True, COLORS['white'])
         screen.blit(pause_text, (pause_button.x + 10, pause_button.y + 10))
+
+        shop_text = font.render("商店", True, COLORS['white'])
+        screen.blit(shop_text, (shop_button.x + 10, shop_button.y + 10))
+
 
         # 绘制蓄力条
         power_bar.draw(screen)

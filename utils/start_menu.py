@@ -1,7 +1,8 @@
 # utils/start_menu.py
 from doctest import master
 
-from settings import COLORS, SCREEN_WIDTH, SCREEN_HEIGHT, FONT_PATH
+from settings import *
+
 import pygame
 import math
 
@@ -12,7 +13,114 @@ def draw_rounded_button(screen, rect, border_color, fill_color, border_radius, b
     if border_width > 0:
         pygame.draw.rect(screen, border_color, rect, border_radius=border_radius, width=border_width)  # 绘制边框
 
+def draw_volume_slider(screen: pygame.Surface, volume: float):
+    """绘制音量滑块"""
+    slider_width, slider_height = 200, 10
+    slider_x, slider_y = (screen.get_width() // 2 - slider_width // 2, 300)
+    slider_rect = pygame.Rect(slider_x, slider_y, slider_width, slider_height)
+    handle_radius = 10
+
+    # 绘制滑块背景
+    pygame.draw.rect(screen, COLORS['gray'], slider_rect)
+
+    # 计算滑块手柄位置
+    handle_x = slider_x + int(volume * slider_width)
+    handle_y = slider_y + slider_height // 2
+
+    # 绘制滑块手柄
+    pygame.draw.circle(screen, COLORS['white'], (handle_x, handle_y), handle_radius)
+
+    return slider_rect, handle_radius
+
+def show_settings_menu(screen, background_image):
+    """显示设置界面"""
+    global VOLUME  # 引用全局变量 VOLUME
+    select_sound = pygame.mixer.Sound(SELECT_PATH)
+    select_sound.set_volume(10 * VOLUME)
+
+    menu_font = pygame.font.Font(FONT_PATH, 48)  # 主菜单字体
+    small_menu_font = pygame.font.Font(FONT_PATH, 20)  # 提示文字字体
+
+    back_text = small_menu_font.render("返回", True, COLORS['black'])  # 返回按钮文本
+    volume_text=menu_font.render("声音", True, COLORS['black'])  # 返回按钮文本
+    VOLUME_BUTTON_SIZE = (120, 70)  # 返回按钮尺寸
+    VOLUME_BUTTON_POSITION = (450, 200)  # 返回按钮位置
+    volume_button_rect = pygame.Rect(VOLUME_BUTTON_POSITION, VOLUME_BUTTON_SIZE)  # 返回按钮区域
+
+
+    BACK_BUTTON_SIZE = (100, 30)  # 返回按钮尺寸
+    BACK_BUTTON_POSITION = (10, SCREEN_HEIGHT - 40)  # 返回按钮位置
+    back_button_rect = pygame.Rect(BACK_BUTTON_POSITION, BACK_BUTTON_SIZE)  # 返回按钮区域
+
+    while True:  # 进入设置界面循环
+        screen.blit(background_image, (0, 0))  # 绘制背景图像
+        draw_rounded_button(screen, back_button_rect, COLORS['black'], COLORS['gold'], border_radius=15,
+                            border_width=3)  # 绘制返回按钮
+        draw_rounded_button(screen, volume_button_rect, COLORS['black'], COLORS['gold'], border_radius=15,
+                            border_width=3)  # 绘制返回按钮
+        screen.blit(back_text, (back_button_rect.x + 10, back_button_rect.y + 5))  # 显示返回按钮文本
+        screen.blit(volume_text, (volume_button_rect.x + 10, volume_button_rect.y + 5))  # 显示返回按钮文本
+
+        # 绘制音量滑块
+        slider_rect, handle_radius = draw_volume_slider(screen, VOLUME)
+
+        pygame.display.flip()  # 更新屏幕显示
+
+        for event in pygame.event.get():  # 处理事件
+            if event.type == pygame.QUIT:  # 检测窗口关闭事件
+                return False  # 返回 False 表示退出游戏
+            elif event.type == pygame.MOUSEBUTTONDOWN:  # 检测鼠标点击事件
+                if back_button_rect.collidepoint(pygame.mouse.get_pos()):  # 点击返回按钮
+                    select_sound.play()
+                    return True  # 返回 True 表示返回主菜单
+                elif slider_rect.collidepoint(event.pos):  # 点击滑块
+                    # 更新音量值
+                    relative_x = event.pos[0] - slider_rect.x
+                    VOLUME = max(0, min(1, relative_x / slider_rect.width))
+
+
+
+def show_about_menu(screen, background_image):
+    """显示关于界面"""
+    select_sound = pygame.mixer.Sound(SELECT_PATH)
+    select_sound.set_volume(10 * VOLUME)
+    while True:  # 进入关于界面循环
+        big_menu_font = pygame.font.Font(FONT_PATH, 50)  # 标题背景字体
+        menu_font = pygame.font.Font(FONT_PATH, 48)  # 主菜单字体
+        small_menu_font = pygame.font.Font(FONT_PATH, 20)  # 提示文字字体
+
+        screen.blit(background_image, (0, 0))  # 绘制背景图像
+        back_text = small_menu_font.render("返回", True, COLORS['black'])  # 返回按钮文本
+        BACK_BUTTON_SIZE = (100, 30)  # 返回按钮尺寸
+        BACK_BUTTON_POSITION = (10, SCREEN_HEIGHT - 40)  # 返回按钮位置
+        back_button_rect = pygame.Rect(BACK_BUTTON_POSITION, BACK_BUTTON_SIZE)  # 返回按钮区域
+
+        # 使用新函数绘制关于信息
+        draw_about_screen(screen, menu_font,big_menu_font, COLORS)
+
+        draw_rounded_button(screen, back_button_rect, COLORS['black'], COLORS['gold'], border_radius=15,
+                            border_width=3)  # 绘制返回按钮
+        screen.blit(back_text, (back_button_rect.x + 10, back_button_rect.y + 5))  # 显示返回按钮文本
+
+        pygame.display.flip()  # 更新屏幕显示
+
+        for event in pygame.event.get():  # 处理事件
+            if event.type == pygame.QUIT:  # 检测窗口关闭事件
+                return False  # 返回 False 表示退出游戏
+            elif event.type == pygame.MOUSEBUTTONDOWN:  # 检测鼠标点击事件
+                if back_button_rect.collidepoint(pygame.mouse.get_pos()):  # 点击返回按钮
+                    select_sound.play()
+                    return True  # 返回 True 表示返回主菜单
+
 def show_start_menu(screen, background_image):
+    global VOLUME
+    select_sound = pygame.mixer.Sound(SELECT_PATH)
+    select_sound.set_volume(10 * VOLUME)
+    # 加载并播放背景音乐
+    pygame.mixer.music.load(START_PATH)  # 替换为你的 BGM 文件路径
+    pygame.mixer.music.set_volume(VOLUME / 3)  # 设置音量（0.0 到 1.0）
+    pygame.mixer.music.play(-1)  # -1 表示循环播放
+
     """显示开始菜单，提供动态效果和用户交互"""
 
     # 初始化字体对象
@@ -54,43 +162,8 @@ def show_start_menu(screen, background_image):
 
 
 
-    def show_settings_menu():
-        """显示设置界面"""
-        while True:  # 进入设置界面循环
-            screen.blit(background_image, (0, 0))  # 绘制背景图像
-            draw_rounded_button(screen, back_button_rect, COLORS['black'], COLORS['gold'], border_radius=15,
-                                border_width=3)  # 绘制返回按钮
-            screen.blit(back_text, (back_button_rect.x + 10, back_button_rect.y + 5))  # 显示返回按钮文本
 
-            pygame.display.flip()  # 更新屏幕显示
 
-            for event in pygame.event.get():  # 处理事件
-                if event.type == pygame.QUIT:  # 检测窗口关闭事件
-                    return False  # 返回 False 表示退出游戏
-                elif event.type == pygame.MOUSEBUTTONDOWN:  # 检测鼠标点击事件
-                    if back_button_rect.collidepoint(pygame.mouse.get_pos()):  # 点击返回按钮
-                        return True  # 返回 True 表示返回主菜单
-
-    def show_about_menu():
-        """显示关于界面"""
-        while True:  # 进入关于界面循环
-            screen.blit(background_image, (0, 0))  # 绘制背景图像
-
-            # 使用新函数绘制关于信息
-            draw_about_screen(screen, menu_font,big_menu_font, COLORS)
-
-            draw_rounded_button(screen, back_button_rect, COLORS['black'], COLORS['gold'], border_radius=15,
-                                border_width=3)  # 绘制返回按钮
-            screen.blit(back_text, (back_button_rect.x + 10, back_button_rect.y + 5))  # 显示返回按钮文本
-
-            pygame.display.flip()  # 更新屏幕显示
-
-            for event in pygame.event.get():  # 处理事件
-                if event.type == pygame.QUIT:  # 检测窗口关闭事件
-                    return False  # 返回 False 表示退出游戏
-                elif event.type == pygame.MOUSEBUTTONDOWN:  # 检测鼠标点击事件
-                    if back_button_rect.collidepoint(pygame.mouse.get_pos()):  # 点击返回按钮
-                        return True  # 返回 True 表示返回主菜单
 
     # 主循环
     clock = pygame.time.Clock()  # 创建时钟对象
@@ -203,21 +276,25 @@ def show_start_menu(screen, background_image):
         # 处理用户事件
         for event in pygame.event.get():  # 遍历事件队列
             if event.type == pygame.QUIT:  # 检测窗口关闭事件
-                return False  # 返回 False 表示退出游戏
+                exit()  # 返回 False 表示退出游戏
             elif event.type == pygame.MOUSEBUTTONDOWN:  # 检测鼠标点击事件
                 if start_button_rect.collidepoint(mouse_pos):  # 点击开始按钮
+                    select_sound.play()
                     return True  # 返回 True 表示进入游戏
                 elif settings_button_rect.collidepoint(mouse_pos):  # 点击设置按钮
-                    if not show_settings_menu():  # 显示设置界面
+                    select_sound.play()
+                    if not show_settings_menu(screen, background_image):  # 显示设置界面
                         return False  # 如果设置界面返回 False，则退出游戏
                 elif about_button_rect.collidepoint(mouse_pos):  # 点击关于按钮
-                    if not show_about_menu():  # 显示关于界面
+                    select_sound.play()
+                    if not show_about_menu(screen, background_image):  # 显示关于界面
                         return False  # 如果关于界面返回 False，则退出游戏
                 elif quit_button_rect.collidepoint(mouse_pos):  # 点击退出按钮
-                    return False  # 返回 False 表示退出游戏
+                    exit()  # 返回 False 表示退出游戏
+
 
 # 新增的函数实现
-def draw_about_screen(screen, menu_font,big_menu_font, COLORS):
+def draw_about_screen(screen, menu_font,big_menu_font,COLORS):
 
     title_text = menu_font.render("弓箭手传奇", True, COLORS['gold'])  # 主标题
     title_text_bk = big_menu_font.render("弓箭手传奇", True, COLORS['red'])  # 主标题背景
@@ -233,10 +310,11 @@ def draw_about_screen(screen, menu_font,big_menu_font, COLORS):
 
     # 开发人员信息
     master_text = menu_font.render("开发人员", True, COLORS['black'])
-    A_text = menu_font.render("组长&程序：晓炙云溪", True, COLORS['black'])
-    B_text = menu_font.render("声乐&美术：雨林霖", True, COLORS['black'])
-    C_text = menu_font.render("策划&设计：可能是黑某人吧", True, COLORS['black'])
-    D_text = menu_font.render("设计&美术：cheems", True, COLORS['black'])
+    A_text = menu_font.render("程序：晓炙云溪", True, COLORS['black'])
+    B_text = menu_font.render("设计：雨林霖", True, COLORS['black'])
+    C_text = menu_font.render("策划：可能是黑某人吧", True, COLORS['black'])
+    D_text = menu_font.render("美术：cheems", True, COLORS['black'])
+    E_text = menu_font.render("%s"%VISION, True, COLORS['black'])
 
     # 居中绘制逻辑
     def blit_centered(text, y_offset):
@@ -244,7 +322,7 @@ def draw_about_screen(screen, menu_font,big_menu_font, COLORS):
         y = y_offset  # 垂直偏移
         screen.blit(text, (x, y))
     def blit_left(text, y_offset):
-        x = 250  # 水平居中
+        x = 340  # 水平居中
         y = y_offset  # 垂直偏移
         screen.blit(text, (x, y))
 
@@ -254,3 +332,4 @@ def draw_about_screen(screen, menu_font,big_menu_font, COLORS):
     blit_left(B_text, 250)       # 第二条信息
     blit_left(C_text, 300)       # 第三条信息
     blit_left(D_text, 350)       # 第四条信息
+    screen.blit(E_text,(910,540))  # 第四条信息

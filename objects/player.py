@@ -1,4 +1,6 @@
 # objects/player.py
+import random
+
 import pygame
 from pygame import Vector2
 from settings import *
@@ -12,11 +14,13 @@ class Player:
     frame_delay = 100  # 每帧显示的时间（毫秒）
     def __init__(self):
         # Player attributes
+        self.arrow_up =3
         self.to_home = 0
         self.to_home_max = 180
         self.health: int = 30  # 玩家当前生命值
+        self.health_up=2
         self.max_health: int = self.health  # 玩家最大生命值
-        self.money: int = 0  # 玩家拥有的金币数量
+        self.money: int = 100  # 玩家拥有的金币数量
         self.exp:int=0
         self.level: int = 1  # 玩家的经验等级
         self.alive: bool = True  # 玩家是否存活
@@ -33,12 +37,25 @@ class Player:
         self.skills: dict = {}  # 玩家技能字典
         self.respawn_penalty: int = 300  # 玩家复活时的惩罚值
         self.speed: int = 3  # 玩家移动速度
-        self.tenacity: int = 5  # 玩家韧性，减少受到的伤害
-        self.arrow_count: int = 10  # 玩家拥有的箭矢数量
+        self.tenacity: int = 0  # 玩家韧性，减少受到的伤害
+        self.arrow_count: int = 50  # 玩家拥有的箭矢数量
         self.current_frame = 0  # 当前帧索引
         self.frame_timer = 0  # 帧计时器
         self.frame_delay = 30  # 每帧显示的时间（毫秒）
         self.temp_speed=0
+        self.health_up_cd=120
+        self.health_up_cd_time=0
+        self.arrow_up_cd = 180
+        self.arrow_up_cd_time = 0
+        self.level_choice = []
+        for i in range(5):
+            self.level_choice.append("max_health_up")
+        for i in range(3):
+            self.level_choice.append("attack_up")
+        for i in range(2):
+            self.level_choice.append("speed_up")
+
+
         # 加载多帧角色图片
         sprite_sheet = pygame.image.load(PLAYER_IMAGE_PATH).convert_alpha()
 
@@ -88,9 +105,36 @@ class Player:
                 self.to_home_max+=20
                 self.to_home =  self.to_home_max
 
-        elif self.exp>=self.level*10:
+        elif self.exp>=self.level*10+100:
             self.level+=1
             self.exp=0
+            self.arrow_count +=self.level*2
+            self.money += 100
+            if random.choice(self.level_choice)=="max_health_up":
+                self.max_health += 10
+            if random.choice(self.level_choice)=="attack_up":
+                self.attack_power += 5
+            if random.choice(self.level_choice)=="speed_up":
+                self.speed += 0.5
+
+
+
+
+        self.health_up_cd_time+=1
+        if self.health<self.max_health and self.health_up_cd_time >= self.health_up_cd:
+            self.health += self.health_up
+            self.health_up_cd_time =0
+
+        self.arrow_up_cd_time += 1
+        if self.arrow_up_cd_time >= self.arrow_up_cd:
+            self.arrow_count += 1
+            self.arrow_up_cd_time = 0
+
+
+
+
+        if self.health>self.max_health:
+            self.health = self.max_health
 
 
 

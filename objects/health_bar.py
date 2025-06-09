@@ -17,7 +17,10 @@ class Health_bar:
         self.height = 10  # 调整血量条高度
         self.color = COLORS['red']  # 血量条颜色
 
-    def update(self, current_health: int):
+    def update(self, current_health: int,max_health=-1):
+        if max_health>0:
+            self.max_health=max_health
+            self.width = self.max_health * 0.6  # 根据最大生命值自动调整宽度
         self.current_health = current_health
 
     def draw(self,surface: pygame.Surface, pos: Vector2,offset,home:bool=False):
