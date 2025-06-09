@@ -1,6 +1,6 @@
-# 忽略所有 __pycache__ 文件夹
+# Ignore Python cache files
 __pycache__/
-*.pyc
+*.py[cod]
 
 # 忽略 IDE 的配置文件（以 PyCharm 为例）
 .idea/
