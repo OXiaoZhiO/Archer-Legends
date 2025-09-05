@@ -66,5 +66,5 @@ bash python shoot.py
 ## 📞 联系方式
 如果您有任何问题或建议，请随时联系我：
 - Email: 2175306254@qq.com
-- GitHub: [OoXiaoZhioO](https://github.com/OoXiaoZhioO)
+- GitHub: [OoXiaoZhioO](https://github.com/OXiaoZhiO)
 ```
